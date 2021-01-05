@@ -19,7 +19,7 @@ class DateTimeEncoder(json.JSONEncoder):
 MAX_LIST_ANALYZED_RESOURSES_ATTEMPTS = 10
 MAX_LIST_ANALYZED_RESOURCES_RESULTS = 100
 RESOURCE_TYPE_KMS = "AWS::KMS::Key"
-SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN", "arn:aws:sns:us-east-1:906545278380:access-analyzer-kms-keys-findings")
+SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN", "")
 analyzer_arn = ""
 kms_client = boto3.client("kms")
 aa_client = boto3.client('accessanalyzer')
