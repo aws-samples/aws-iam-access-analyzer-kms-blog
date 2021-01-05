@@ -11,15 +11,15 @@
             "Sid": "AccessAnalyzerCreateServiceLinkedRole"
         },
         {
-        "Action": [
-            "access-analyzer:Get*",
-            "access-analyzer:List*",
-            "access-analyzer:Start*",
-            "access-analyzer:CreateAnalyzer"
-        ],
-        "Resource": "*",
-        "Effect": "Allow",
-        "Sid": "AccessAnalyzerAccessPolicy"
+            "Action": [
+                "access-analyzer:Get*",
+                "access-analyzer:List*",
+                "access-analyzer:Start*",
+                "access-analyzer:CreateAnalyzer"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "AccessAnalyzerAccessPolicy"
         },
         {
             "Action": [
@@ -31,13 +31,13 @@
             "Sid": "KMSAccessPolicy"
         },
         {
-        "Action": [
-            "sns:List*",
-            "sns:Publish"
-        ],
-        "Resource": "<SNS_TOPIC_ARN>",
-        "Effect": "Allow",
-        "Sid": "SNSPublishPolicy"
+            "Action": [
+                "sns:List*",
+                "sns:Publish"
+            ],
+            "Resource": "<SNS_TOPIC_ARN>",
+            "Effect": "Allow",
+            "Sid": "SNSPublishPolicy"
         }
     ]
 }

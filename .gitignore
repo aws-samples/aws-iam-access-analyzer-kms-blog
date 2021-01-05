@@ -137,7 +137,7 @@ deploy
 
 # SAM
 .aws-sam/*
-
+samconfig.*
 .DS_Store
 .environment
 .not-used-snippets

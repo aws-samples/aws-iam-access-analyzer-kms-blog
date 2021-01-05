@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: Detect public access to the customer KMS keys using IAM Access Analyzer
+
+Parameters:
+  NotificationEmail:
+    Type: String
+    Description: Notification email for Access Analyzer findings for KMS keys
+
+Resources:
+  AccessAnalyzerKMSFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri: ./functions/access-analyzer-kms
+      Runtime: python3.8
+      Timeout: 120
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref AccessAnalyzerKMSFindingsTopic
+      Events:
+        CWKMSPolicyOrGrantChange:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+                    {
+                      "source": [
+                        "aws.kms"
+                      ],
+                      "detail-type": [
+                        "AWS API Call via CloudTrail"
+                      ],
+                      "detail": {
+                        "eventSource": [
+                          "kms.amazonaws.com"
+                        ],
+                        "eventName": [
+                          "PutKeyPolicy",
+                          "CreateGrant"
+                        ]
+                      }
+                    }
+      FunctionName: access-analyzer-kms-function
+      Handler: access_analyzer_kms_function.lambda_handler  
+      Policies:
+        - Statement:
+          - Sid: AccessAnalyzerCreateServiceLinkedRole
+            Effect: Allow
+            Action:
+            - iam:CreateServiceLinkedRole
+            Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/access-analyzer.amazonaws.com/AWSServiceRoleForAccessAnalyzer
+          - Sid: AccessAnalyzerAccessPolicy
+            Effect: Allow
+            Action:
+            - access-analyzer:Get*
+            - access-analyzer:List*
+            - access-analyzer:Start*
+            - access-analyzer:CreateAnalyzer
+            Resource: '*'
+          - Sid: KMSAccessPolicy
+            Effect: Allow
+            Action:
+            - kms:ListKeys
+            - kms:DescribeKey
+            Resource: '*'
+          - Sid: SNSPublishPolicy
+            Effect: Allow
+            Action:
+            - sns:List*
+            - sns:Publish
+            Resource: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${AccessAnalyzerKMSFindingsTopic.TopicName}        
+      ReservedConcurrentExecutions: 1
+      Tags:   
+        Project: access-analyzer-kms
+        FunctionType: checker      
+
+  AccessAnalyzerKMSFindingsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: access-analyzer-kms-keys-findings
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref NotificationEmail
