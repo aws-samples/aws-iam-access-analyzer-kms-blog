@@ -1,0 +1,1 @@
+"{\"Version\": \"2012-10-17\",\"Id\": \"key-default-policy\",\"Statement\": [{\"Sid\": \"Enable IAM User Permissions\",\"Effect\": \"Allow\",\"Principal\": {\"AWS\": [\"arn:aws:iam::906545278380:root\",\"arn:aws:iam::906545278380:user/ilyiny-cert-admin\",\"*\"]},\"Action\": \"kms:*\",\"Resource\": \"*\"}]}"

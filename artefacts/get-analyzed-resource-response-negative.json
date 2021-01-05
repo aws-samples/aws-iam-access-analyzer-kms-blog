@@ -1,0 +1,23 @@
+{
+    "ResponseMetadata": {
+      "RequestId": "d2348bca-1d69-417f-8a66-28fe084333d4",
+      "HTTPStatusCode": 200,
+      "HTTPHeaders": {
+        "date": "Sat, 28 Nov 2020 21:35:24 GMT",
+        "content-type": "application/json",
+        "content-length": "228",
+        "connection": "keep-alive",
+        "x-amzn-requestid": "d2348bca-1d69-417f-8a66-28fe084333d4",
+        "x-amz-apigw-id": "WvNYZHiHIAMF7-A=",
+        "x-amzn-trace-id": "Root=1-5fc2c29c-55b61a3b5d3cf324317ddbe7"
+      },
+      "RetryAttempts": 0
+    },
+    "resource": {
+      "analyzedAt": "datetime.datetime(2020, 11, 28, 21, 25, 16, tzinfo = tzutc())",
+      "isPublic": "False",
+      "resourceArn": "arn:aws:kms:us-east-1:ACCOUNT_ID:key/786b353b-49f1-4dd2-b4b5-573ae99b3670",
+      "resourceOwnerAccount": "ACCOUNT_ID",
+      "resourceType": "AWS::KMS::Key"
+    }
+  }

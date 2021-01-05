@@ -1,0 +1,8 @@
+{
+    "source": [
+      "aws.access-analyzer"
+    ],
+    "detail-type": [
+      "Access Analyzer Finding"
+    ]
+}

@@ -1,0 +1,43 @@
+{
+    "Version": "2012-10-17",
+    "Statement": 
+    [
+        {
+            "Action": [
+            "iam:CreateServiceLinkedRole"
+            ],
+            "Resource": "arn:aws:iam::ACCOUNT_ID:role/aws-service-role/access-analyzer.amazonaws.com/AWSServiceRoleForAccessAnalyzer",
+            "Effect": "Allow",
+            "Sid": "AccessAnalyzerCreateServiceLinkedRole"
+        },
+        {
+        "Action": [
+            "access-analyzer:Get*",
+            "access-analyzer:List*",
+            "access-analyzer:Start*",
+            "access-analyzer:CreateAnalyzer"
+        ],
+        "Resource": "*",
+        "Effect": "Allow",
+        "Sid": "AccessAnalyzerAccessPolicy"
+        },
+        {
+            "Action": [
+                "kms:ListKeys",
+                "kms:DescribeKey"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "KMSAccessPolicy"
+        },
+        {
+        "Action": [
+            "sns:List*",
+            "sns:Publish"
+        ],
+        "Resource": "<SNS_TOPIC_ARN>",
+        "Effect": "Allow",
+        "Sid": "SNSPublishPolicy"
+        }
+    ]
+}

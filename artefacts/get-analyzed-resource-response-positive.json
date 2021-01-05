@@ -1,0 +1,27 @@
+{
+    "ResponseMetadata": {
+      "RequestId": "6cf50c63-4974-4f93-b638-953d208836ac",
+      "HTTPStatusCode": 200,
+      "HTTPHeaders": {
+        "date": "Sun, 29 Nov 2020 08:33:39 GMT",
+        "content-type": "application/json",
+        "content-length": "688",
+        "connection": "keep-alive",
+        "x-amzn-requestid": "6cf50c63-4974-4f93-b638-953d208836ac",
+        "x-amz-apigw-id": "WwtzhE9VoAMFiAQ=",
+        "x-amzn-trace-id": "Root=1-5fc35ce3-75468fb62aecc4a20bfe3960"
+      },
+      "RetryAttempts": 0
+    },
+    "resource": {
+      "actions": ["kms:CreateGrant", "kms:Decrypt", "kms:DescribeKey", "kms:Encrypt", "kms:GenerateDataKey", "kms:GenerateDataKeyPair", "kms:GenerateDataKeyPairWithoutPlaintext", "kms:GenerateDataKeyWithoutPlaintext", "kms:GetKeyRotationStatus", "kms:GetPublicKey", "kms:ListGrants", "kms:ReEncryptFrom", "kms:ReEncryptTo", "kms:RetireGrant", "kms:RevokeGrant", "kms:Sign", "kms:Verify"],
+      "analyzedAt": "datetime.datetime(2020, 11, 29, 8, 33, 38, tzinfo = tzutc())",
+      "createdAt": "datetime.datetime(2020, 11, 29, 8, 29, 58, 456000, tzinfo = tzutc())",
+      "isPublic": "True",
+      "resourceArn": "arn:aws:kms:us-east-1:ACCOUNT_ID:key/786b353b-49f1-4dd2-b4b5-573ae99b3670",
+      "resourceOwnerAccount": "ACCOUNT_ID",
+      "resourceType": "AWS::KMS::Key",
+      "status": "ACTIVE",
+      "updatedAt": "datetime.datetime(2020, 11, 29, 8, 29, 58, 456000, tzinfo = tzutc())"
+    }
+  }

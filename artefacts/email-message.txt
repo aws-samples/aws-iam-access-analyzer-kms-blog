@@ -1,0 +1,31 @@
+[
+  {
+    "actions": [
+      "kms:CreateGrant",
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:Encrypt",
+      "kms:GenerateDataKey",
+      "kms:GenerateDataKeyPair",
+      "kms:GenerateDataKeyPairWithoutPlaintext",
+      "kms:GenerateDataKeyWithoutPlaintext",
+      "kms:GetKeyRotationStatus",
+      "kms:GetPublicKey",
+      "kms:ListGrants",
+      "kms:ReEncryptFrom",
+      "kms:ReEncryptTo",
+      "kms:RetireGrant",
+      "kms:RevokeGrant",
+      "kms:Sign",
+      "kms:Verify"
+    ],
+    "analyzedAt": "2020-11-29T13:23:27+00:00",
+    "createdAt": "2020-11-29T08:29:58.456000+00:00",
+    "isPublic": true,
+    "resourceArn": "arn:aws:kms:us-east-1:ACCOUNT_ID:key/786b353b-49f1-4dd2-b4b5-573ae99b3670",
+    "resourceOwnerAccount": "ACCOUNT_ID",
+    "resourceType": "AWS::KMS::Key",
+    "status": "ACTIVE",
+    "updatedAt": "2020-11-29T13:23:27+00:00"
+  }
+]
