@@ -2,7 +2,16 @@
 
 Code repository for the security blog post about detecting the public access to the KMS customer keys using IAM Access Analyzer
 
+## Solution overview
+
 ![access analyzer KMS public access detection](design/access-analyzer.drawio.svg)
+
+1. Resources supported by AWS IAM Access Analyzer
+2. AWS KMS API calls via AWS CloudTrail 
+3. AWS KMS API calls are captured as Amazon CloudWatch Events Rule 
+4. CloudWatch Events rule triggers the AWS Lambda function, which uses Access Analyzer to scan the specific resources
+5. Access Analyzer scan findings are published to an AWS Simple Notification Service Topic
+6. Optional corrective action
 
 ## Repository structure
 - `artefacts/`: samples of Access Analyzer output and email content example  
