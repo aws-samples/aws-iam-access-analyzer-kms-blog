@@ -76,7 +76,6 @@ Resources:
   AccessAnalyzerKMSFindingsTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: access-analyzer-kms-keys-findings
       Subscription:
         - Protocol: email
           Endpoint: !Ref NotificationEmail
