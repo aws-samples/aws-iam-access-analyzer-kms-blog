@@ -65,7 +65,7 @@ for r_arn in customer_keys_arns:
 
     resource_scan[r_arn] = False
 
-import datetime
+import time
 import json
 
 # wait till all resources get analyzed
@@ -100,7 +100,7 @@ for _ in range(MAX_LIST_ANALYZED_RESOURSES_ATTEMPTS):
     if not pending: # exit if all requested resources are processed
         break
     
-    datetime.time.sleep(0.5)
+    time.sleep(0.5)
 else:
     print(f"Max number ({MAX_LIST_ANALYZED_RESOURSES_ATTEMPTS}) of attempts to call list_analyzed_resources reached")
     print(f"The following resources weren't analyzed: {json.dumps(pending, indent=2)}")

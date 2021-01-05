@@ -5,6 +5,7 @@ import boto3
 import uuid
 import json
 import datetime
+import time
 import os
 
 # class JSONEncoder
@@ -127,7 +128,7 @@ def scan_kms_customer_keys(aa_arn, customer_keys_arns):
             if not pending: # exit if all requested resources are processed
                 break
             
-            datetime.time.sleep(0.5)
+            time.sleep(0.5)
         except Exception as e:
             print(f"Exception in list analysed resources loop:{str(e)}")
     else:

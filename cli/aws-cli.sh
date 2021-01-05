@@ -15,11 +15,12 @@ aws iam create-role \
     --role-name access-analyzer-kms-function-role \
     --assume-role-policy-document '{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}'
 
-# Add permissions to the Lambda executiom role
+# Attach the AWS managed policy to the Lambda execution role
 aws iam attach-role-policy \
     --role-name access-analyzer-kms-function-role \
     --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
+# Add permissions to the Lambda execution role
 aws iam put-role-policy \
     --role-name access-analyzer-kms-function-role \
     --policy-name LambdaAccessAnalyzerKMSExecutionRole \
