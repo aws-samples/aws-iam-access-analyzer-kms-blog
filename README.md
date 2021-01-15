@@ -51,12 +51,15 @@ cd access-analyzer-kms
 aws sns create-topic --name access-analyzer-kms-keys-findings
 ```
 
-Replace `TOPIC_ARN` with the SNS topic arn returned from the previous command and `YOUR_EMAIL_ADDRESS` with your email address
+Replace the variables `TOPIC_ARN` with the SNS topic arn returned from the previous command and `EMAIL_ADDRESS` with your email address
 ```bash
+TOPIC_ARN=
+EMAIL_ADDRESS=
+
 aws sns subscribe \
-    --topic-arn <TOPIC_ARN> \
+    --topic-arn ${TOPIC_ARN} \
     --protocol email \
-    --notification-endpoint <YOUR_EMAIL_ADDRESS>
+    --notification-endpoint ${EMAIL_ADDRESS}
 ```
 
 #### Create Lambda execution role  
@@ -94,15 +97,17 @@ aws iam put-role-policy \
 
 #### Create Lambda function
 Now you can create the lambda funtion.
-Replace `ROLE_ARN` with the ARN from `aws iam create-role` call and `TOPIC_ARN` with the ARN from `aws sns create-topic` call:
+Replace `ROLE_ARN` with the ARN from `aws iam create-role` call:
 ```bash
+ROLE_ARN=
+
 aws lambda create-function \
     --function-name access-analyzer-kms-function \
     --runtime python3.8 \
     --handler access_analyzer_kms_function.lambda_handler \
-    --role <ROLE_ARN> \
+    --role ${ROLE_ARN} \
     --timeout 120 \
-    --environment Variables={SNS_TOPIC_ARN=<TOPIC_ARN>} \
+    --environment Variables={SNS_TOPIC_ARN=${TOPIC_ARN}} \
     --zip-file fileb://functions/access_analyzer_kms_function.zip
 ```
 
@@ -141,19 +146,23 @@ aws events put-rule \
 
 To allow the CloudWatch Events rule to invoke our Lambda function we must add the resource-based policy to the function. Replace `RULE_ARN` with the ARN returned from the `aws events put-rule` call:
 ```bash
+RULE_ARN=
+
 aws lambda add-permission \
     --function-name access-analyzer-kms-function \
     --statement-id CloudWatchEventsRuleLambdaPermission \
     --action 'lambda:InvokeFunction' \
     --principal events.amazonaws.com \
-    --source-arn <RULE_ARN>
+    --source-arn ${RULE_ARN}
 ```
 
 Now, with the rule and permissions in place, we need to link the rule and the function (target). Replace `FUNCTION_ARN` with the Lambda function ARN from the `aws lambda create-function` call:
 ```bash
+FUNCTION_ARN=
+
 aws events put-targets \
     --rule kms-key-access-changes \
-    --targets "Id"="1","Arn"="<FUNCTION_ARN>"
+    --targets "Id"="1","Arn"="${FUNCTION_ARN}"
 ```
 
 ## Test detection of public access for AWS KMS key polices
@@ -165,20 +174,23 @@ aws kms create-key \
 
 Make the key public by adding `"*"` to the allowed principal list. Replace `KEY_ID` with the value returned by `aws kms create-key` call. Replace `ACCOUNT_ID`:
 ```bash
+KEY_ID=
+ACCOUNT_ID=
+
 aws kms put-key-policy \
-    --key-id <KEY_ID> \
+    --key-id ${KEY_ID} \
     --policy-name default \
-    --policy "{\"Version\": \"2012-10-17\",\"Id\": \"key-default-policy\",\"Statement\": [{\"Sid\": \"Enable IAM User Permissions\",\"Effect\": \"Allow\",\"Principal\": {\"AWS\": [\"arn:aws:iam::ACCOUNT_ID:root\",\"*\"]},\"Action\": \"kms:*\",\"Resource\": \"*\"}]}"
+    --policy "{\"Version\": \"2012-10-17\",\"Id\": \"key-default-policy\",\"Statement\": [{\"Sid\": \"Enable IAM User Permissions\",\"Effect\": \"Allow\",\"Principal\": {\"AWS\": [\"arn:aws:iam::${ACCOUNT_ID}:root\",\"*\"]},\"Action\": \"kms:*\",\"Resource\": \"*\"}]}"
 ```
 
 Check your email. You will receive a notification from the Lambda function about public access to your KMS key.
 
-Set the policy to private again. Replace `KEY_ID` with the value returned by `aws kms create-key` call. Replace `ACCOUNT_ID`:
+Set the policy to private again:
 ```bash
 aws kms put-key-policy \
-    --key-id <KEY_ID> \
+    --key-id ${KEY_ID} \
     --policy-name default \
-    --policy "{\"Version\": \"2012-10-17\",\"Id\": \"key-default-policy\",\"Statement\": [{\"Sid\": \"Enable IAM User Permissions\",\"Effect\": \"Allow\",\"Principal\": {\"AWS\": [\"arn:aws:iam::906545278380:root\"]},\"Action\": \"kms:*\",\"Resource\": \"*\"}]}"
+    --policy "{\"Version\": \"2012-10-17\",\"Id\": \"key-default-policy\",\"Statement\": [{\"Sid\": \"Enable IAM User Permissions\",\"Effect\": \"Allow\",\"Principal\": {\"AWS\": [\"arn:aws:iam::${ACCOUNT_ID}:root\"]},\"Action\": \"kms:*\",\"Resource\": \"*\"}]}"
 ```
 
 
