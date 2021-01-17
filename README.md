@@ -51,6 +51,8 @@ cd access-analyzer-kms
 aws sns create-topic --name access-analyzer-kms-keys-findings
 ```
 
+Please note the `TopicArn` output. We will use it on the next step.
+
 Replace the variables `TOPIC_ARN` with the SNS topic arn returned from the previous command and `EMAIL_ADDRESS` with your email address
 ```bash
 TOPIC_ARN=
@@ -172,7 +174,9 @@ aws kms create-key \
     --description "Access Analyzer KMS customer key scan test"
 ```
 
-Make the key public by adding `"*"` to the allowed principal list. Replace `KEY_ID` with the value returned by `aws kms create-key` call. Replace `ACCOUNT_ID`:
+Please note `KeyId` - we will need it on the next step.
+
+Make the key public by adding `"*"` to the allowed principal list. Replace `KEY_ID` with the value returned by `aws kms create-key` call. Replace `ACCOUNT_ID` with the current AWS account id:
 ```bash
 KEY_ID=
 ACCOUNT_ID=

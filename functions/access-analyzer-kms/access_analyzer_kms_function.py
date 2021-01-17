@@ -52,33 +52,22 @@ def get_analyzer_arn():
 # get all KMS keys in the account in the region
 def get_customer_keys_arns():
     customer_keys_arns = []
-    marker = ""
 
     try:
         print("Enumerating KMS customer keys")
-        while True:
-            # list all KMS keys in the account and region
-            if marker:
-                res = kms_client.list_keys(Limit=100, Marker=marker)
-            else: 
-                res = kms_client.list_keys(Limit=100)
-
+        for page in kms_client.get_paginator("list_keys").paginate():
             # get the KeyManager (AWS or Customer) for each returned key
-            for k in res["Keys"]:
-                k_data = kms_client.describe_key(KeyId=k["KeyId"]).get("KeyMetadata")
+            for k in page["Keys"]:
+                k_data = kms_client.describe_key(KeyId=k["KeyId"])["KeyMetadata"]
                 # take only Customer key (where KeyManager not AWS)
-                if k_data['KeyManager'] not in "AWS":
-                    customer_keys_arns.append(k_data["Arn"])                
+                if k_data["KeyManager"] not in "AWS":
+                    customer_keys_arns.append(k_data["Arn"])
 
-            marker = res.get("NextMarker")
-            if not marker:
-                break
     except Exception as e:
         print(f"Exception during KMS list and describe keys: {e}")
 
     print(f"Found customer keys:{json.dumps(customer_keys_arns, indent=2)}")
     return customer_keys_arns
-
 
 # scan customer keys using access analyser
 def scan_kms_customer_keys(aa_arn, customer_keys_arns):    
@@ -101,33 +90,17 @@ def scan_kms_customer_keys(aa_arn, customer_keys_arns):
             print(f"Exception in start_resource_scan for {r_arn}:{str(e)}")
 
     # wait till all resources get analyzed
-    nextToken = ""
     for _ in range(MAX_LIST_ANALYZED_RESOURSES_ATTEMPTS):
         try:
-            if nextToken:
-                res = aa_client.list_analyzed_resources(
-                    analyzerArn=aa_arn,
-                    maxResults=MAX_LIST_ANALYZED_RESOURCES_RESULTS,
-                    nextToken=nextToken,
-                    resourceType=RESOURCE_TYPE_KMS
-                )
-            else:
-                res = aa_client.list_analyzed_resources(
-                        analyzerArn=aa_arn,
-                        maxResults=MAX_LIST_ANALYZED_RESOURCES_RESULTS,
-                        resourceType=RESOURCE_TYPE_KMS
-                    )
-            nextToken = res.get("nextToken")
-
-            for resource in res["analyzedResources"]:
-                if resource["resourceArn"] in resource_scan:
-                    resource_scan[resource["resourceArn"]] = True
-
+            for page in aa_client.get_paginator("list_analyzed_resources").paginate(analyzerArn=aa_arn, resourceType=RESOURCE_TYPE_KMS):
+                for r in page["analyzedResources"]:
+                    if r["resourceArn"] in resource_scan:
+                        resource_scan[r["resourceArn"]] = True
+                        
             pending = {r:s for r,s in resource_scan.items() if not s}
 
             if not pending: # exit if all requested resources are processed
-                break
-            
+                    break
             time.sleep(0.5)
         except Exception as e:
             print(f"Exception in list analysed resources loop:{str(e)}")

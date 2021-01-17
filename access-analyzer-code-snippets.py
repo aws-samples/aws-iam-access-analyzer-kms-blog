@@ -28,29 +28,16 @@ except Exception as e:
     print(f"Exception during get analyzer: {str(e)}")
 
 # get all KMS keys in the account in the region
-
 kms_client = boto3.client("kms")
 
 customer_keys_arns = []
-marker = ""
-while True:
-    # list all KMS keys in the account and region
-    if marker:
-        res = kms_client.list_keys(Limit=100, Marker=marker)
-    else: 
-        res = kms_client.list_keys(Limit=100)
-
+for page in kms_client.get_paginator("list_keys").paginate():
     # get the KeyManager (AWS or Customer) for each returned key
-    for k in res["Keys"]:
-        k_data = kms_client.describe_key(KeyId=k["KeyId"]).get("KeyMetadata")
+    for k in page["Keys"]:
+        k_data = kms_client.describe_key(KeyId=k["KeyId"])["KeyMetadata"]
         # take only Customer key (where KeyManager not AWS)
         if k_data["KeyManager"] not in "AWS":
             customer_keys_arns.append(k_data["Arn"])
-
-    marker = res.get("NextMarker")
-    if not marker:
-        break
-
 
 # scan customer keys using access analyser
 resource_scan = {}
@@ -69,42 +56,25 @@ import time
 import json
 
 # wait till all resources get analyzed
-nextToken = ""
 MAX_LIST_ANALYZED_RESOURSES_ATTEMPTS = 10
-MAX_LIST_ANALYZED_RESOURCES_RESULTS = 10
 rType = "AWS::KMS::Key"
 
 for _ in range(MAX_LIST_ANALYZED_RESOURSES_ATTEMPTS):
 
-    if nextToken:
-        res = aa_client.list_analyzed_resources(
-            analyzerArn=analyzer_arn,
-            maxResults=MAX_LIST_ANALYZED_RESOURCES_RESULTS,
-            nextToken=nextToken,
-            resourceType=rType
-        )
-    else:
-        res = aa_client.list_analyzed_resources(
-                analyzerArn=analyzer_arn,
-                maxResults=MAX_LIST_ANALYZED_RESOURCES_RESULTS,
-                resourceType=rType
-            )
-    nextToken = res.get("nextToken")
-
-    for resource in res["analyzedResources"]:
-        if resource["resourceArn"] in resource_scan:
-            resource_scan[resource["resourceArn"]] = True
-
+    for page in aa_client.get_paginator("list_analyzed_resources").paginate(analyzerArn=analyzer_arn, resourceType=rType):
+        for r in page["analyzedResources"]:
+            if r["resourceArn"] in resource_scan:
+                resource_scan[r["resourceArn"]] = True
+                
     pending = {r:s for r,s in resource_scan.items() if not s}
 
     if not pending: # exit if all requested resources are processed
-        break
-    
+            break
     time.sleep(0.5)
 else:
     print(f"Max number ({MAX_LIST_ANALYZED_RESOURSES_ATTEMPTS}) of attempts to call list_analyzed_resources reached")
     print(f"The following resources weren't analyzed: {json.dumps(pending, indent=2)}")
-    
+
 # get resource scan result only on analyzed resources
 findings = []
 
