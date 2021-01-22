@@ -1,6 +1,6 @@
 # Using AWS IAM Access Analyzer API to detect public access to AWS KMS CMK
 
-Code repository for the security blog post about detecting the public access to the KMS customer keys using IAM Access Analyzer
+Code repository for the [security blog post](link) about detecting the public access to the KMS customer keys using IAM Access Analyzer
 
 ## Solution overview
 
