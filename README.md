@@ -8,15 +8,15 @@ Code repository for the [security blog post](link) about detecting the public ac
 
 1. Resources supported by AWS IAM Access Analyzer
 2. AWS KMS API calls via AWS CloudTrail 
-3. AWS KMS API calls are captured as Amazon CloudWatch Events Rule 
-4. CloudWatch Events rule triggers the AWS Lambda function, which uses Access Analyzer to scan the specific resources
-5. Access Analyzer scan findings are published to an AWS Simple Notification Service Topic
+3. AWS KMS API calls are captured as Amazon EventBridge Rule 
+4. EventBridge rule triggers the AWS Lambda function, which uses Access Analyzer to scan the specific resources
+5. Lambda function calls Access Analyzer to scan the KMS keys. Findings are published to an EventBrige bus (5A) or to AWS Security Hub (5B)
 6. Optional corrective action
 
 ## Repository structure
 - `artefacts/`: samples of Access Analyzer output and email content example  
 - `design/`: Architecture diagram for the solution
-- `events/`: CloudWatch Events rule setup
+- `events/`: EventBridge rule setup
 - `functions/`: Lambda function
 - `policies/`: Lambda execution role policies and KMS keys policies
 
@@ -30,11 +30,11 @@ The solution is delivered as a SAM application. Follow the instructions to deplo
 1. Install [SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html) if you do not have it
 2. Clone the source code repository to your local environment
 3. Build and deploy solution using the SAM CLI in the solution directory:
+
 ```bash
-% sam build
-```
-```bash
-% sam deploy --guided
+% git clone https://github.com/aws-samples/aws-iam-access-analyzer-kms-blog.git
+% cd aws-iam-access-analyzer-kms-blog
+% make deploy
 ```
 
 ### Manual deployment
@@ -42,8 +42,8 @@ Alternatively, you can deploy the solution step by step by executing the followi
 
 #### Clone the source code repository to your local enviroment
 ```bash
-git clone <git-repository>
-cd access-analyzer-kms
+% git clone https://github.com/aws-samples/aws-iam-access-analyzer-kms-blog.git
+% cd aws-iam-access-analyzer-kms-blog
 ```
 
 #### Create SNS topic and subscription
@@ -62,6 +62,17 @@ aws sns subscribe \
     --topic-arn ${TOPIC_ARN} \
     --protocol email \
     --notification-endpoint ${EMAIL_ADDRESS}
+```
+
+#### Add permissions to enable EventBridge to publish to SNS topic
+Using the `TOPIC_ARN` from the previous call, add the resource-based policy to the SNS topic:
+```bash
+ACCOUNT_ID=<Enter your AWS account id>
+TOPIC_ARN=<Amazon SNS topic ARN>
+
+aws sns set-topic-attributes --topic-arn "${TOPIC_ARN}" \
+    --attribute-name Policy \
+    --attribute-value "{\"Version\":\"2012-10-17\",\"Id\":\"__default_policy_ID\",\"Statement\":[{\"Sid\":\"__default_statement_ID\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":[\"SNS:GetTopicAttributes\",\"SNS:SetTopicAttributes\",\"SNS:AddPermission\",\"SNS:RemovePermission\",\"SNS:DeleteTopic\",\"SNS:Subscribe\",\"SNS:ListSubscriptionsByTopic\",\"SNS:Publish\",\"SNS:Receive\"],\"Resource\":\"${TOPIC_ARN}\",\"Condition\":{\"StringEquals\":{\"AWS:SourceOwner\":\"${ACCOUNT_ID}\"}}}, {\"Sid\":\"PublishEventsToSNSTopic\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"events.amazonaws.com\"},\"Action\":\"sns:Publish\",\"Resource\":\"${TOPIC_ARN}\"}]}"
 ```
 
 #### Create Lambda execution role  
@@ -87,9 +98,9 @@ Along with basic Lambda execution permissions for creating CloudWatch log stream
 -	Create Access Analyzer (together with permission to create a [service-linked role](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html#iam-term-service-linked-role))
 -	Work with Access Analyzer API
 -	List and describe AWS KMS keys
--	Publish to Amazon SNS topic
+-	Publish events to an EventBridge bus
 
-Attach the custom permission policy with these permissions to the function execution role. Replace `SNS_TOPIC_ARN` and `ACCOUNT_ID` placeholder in the file [lambda-function-access-analyzer-KMS-permissions.json](policies/lambda-function-access-analyzer-KMS-permissions.json):
+Attach the custom permission policy with these permissions to the function execution role. Replace `ACCOUNT_ID` placeholder in the file [lambda-function-access-analyzer-KMS-permissions.json](policies/lambda-function-access-analyzer-KMS-permissions.json):
 ```bash
 aws iam put-role-policy \
     --role-name access-analyzer-kms-function-role \
@@ -109,16 +120,15 @@ aws lambda create-function \
     --handler access_analyzer_kms_function.lambda_handler \
     --role ${ROLE_ARN} \
     --timeout 120 \
-    --environment Variables={SNS_TOPIC_ARN=${TOPIC_ARN}} \
     --zip-file fileb://functions/access_analyzer_kms_function.zip
 ```
 
-#### Create a CloudWatch Events rule and wire it to the Lambda function
-The last step in the deployment of the Access Analyzer-based public access detection solution is to set up a CloudWatch Events rule which will trigger the Lambda function.
+#### Create an EventBridge rule and wire it to the Lambda function
+The last step in the deployment of the Access Analyzer-based public access detection solution is to set up an EventBridge rule which will trigger the Lambda function.
 We want to trigger the Access Analyzer KMS key scan on any changes in key policy or on creation of a key grant.
 The two API operations responsible for this are `PutKeyPolicy` and `CreateGrant`.
 
-To create a rule that triggers on those actions we should capture those specific AWS KMS API calls in CloudWatch via AWS CloudTrail using the following event pattern:
+To create a rule that triggers on those actions we should capture those specific AWS KMS API calls in EventBridge via AWS CloudTrail using the following event pattern:
 ```json
 {
     "source": [
@@ -139,20 +149,20 @@ To create a rule that triggers on those actions we should capture those specific
 }
 ```
 
-First, create the CloudWatch Events rule:
+First, create the EventBrige rule:
 ```bash
 aws events put-rule \
     --name kms-key-access-changes \
     --event-pattern "{\"source\": [\"aws.kms\"],\"detail-type\": [\"AWS API Call via CloudTrail\"],\"detail\": {\"eventSource\": [\"kms.amazonaws.com\"],\"eventName\": [\"PutKeyPolicy\",\"CreateGrant\"]}}" 
 ```
 
-To allow the CloudWatch Events rule to invoke our Lambda function we must add the resource-based policy to the function. Replace `RULE_ARN` with the ARN returned from the `aws events put-rule` call:
+To allow the EventBridge rule to invoke our Lambda function we must add the resource-based policy to the function. Replace `RULE_ARN` with the ARN returned from the `aws events put-rule` call:
 ```bash
 RULE_ARN=
 
 aws lambda add-permission \
     --function-name access-analyzer-kms-function \
-    --statement-id CloudWatchEventsRuleLambdaPermission \
+    --statement-id EventBridgeRuleLambdaPermission \
     --action 'lambda:InvokeFunction' \
     --principal events.amazonaws.com \
     --source-arn ${RULE_ARN}
@@ -165,6 +175,35 @@ FUNCTION_ARN=
 aws events put-targets \
     --rule kms-key-access-changes \
     --targets "Id"="1","Arn"="${FUNCTION_ARN}"
+```
+
+#### Create an EventBridge rule to publish findings to Amazon SNS topic
+In this section we create a second EventBridge rule, which will publish the findings from the Lambda function to our Amazon SNS topic (`TOPIC_ARN`)
+
+We use the following event pattern for the EventBridge rule to invoke it for each findings event sent by the Lambda function:
+```json
+{
+    "source": [
+      "access-analyzer-kms-function"
+    ],
+    "detail-type": [
+      "Access Analyzer KMS Findings"
+    ]
+}
+```
+
+First, create the EventBridge rule:
+```bash
+aws events put-rule \
+    --name kms-key-access-findings \
+    --event-pattern "{\"source\": [\"access-analyzer-kms-function\"],\"detail-type\": [\"Access Analyzer KMS Findings\"]}" 
+```
+
+Finally, set the Amazon SNS topic as a target for the EventBrige rule:
+```bash
+aws events put-targets \
+    --rule kms-key-access-findings \
+    --targets "Id"="1","Arn"="${TOPIC_ARN}"
 ```
 
 ## Test detection of public access for AWS KMS key polices
@@ -196,10 +235,6 @@ aws kms put-key-policy \
     --policy-name default \
     --policy "{\"Version\": \"2012-10-17\",\"Id\": \"key-default-policy\",\"Statement\": [{\"Sid\": \"Enable IAM User Permissions\",\"Effect\": \"Allow\",\"Principal\": {\"AWS\": [\"arn:aws:iam::${ACCOUNT_ID}:root\"]},\"Action\": \"kms:*\",\"Resource\": \"*\"}]}"
 ```
-
-
-
-
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0

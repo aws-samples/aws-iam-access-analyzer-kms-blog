@@ -31,7 +31,7 @@ compile: zip
 build: compile
 
 deploy: compile
-	pipenv run sam deploy --template-file $(SAM_DIR)/packaged.yaml \
+	pipenv run sam deploy --template-file $(SAM_DIR)/build/template.yaml \
 						  --stack-name $(APP_STACK_NAME) \
 						  --capabilities CAPABILITY_IAM \
 						  --region $(AWS_DEPLOY_REGION) \

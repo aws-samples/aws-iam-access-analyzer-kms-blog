@@ -88,8 +88,8 @@ for r_arn in {r for r,s in resource_scan.items() if s}:
         print(f"Found public resource: {r_arn}:{resource}")
         findings.append(resource)
 
-# publish findings to a SNS topic
-snsTopic = boto3.resource('sns').Topic("arn:aws:sns:us-east-1:906545278380:access-analyzer-kms-keys-findings")
+# publish findings to the EventBridge default bus
+events = boto3.client('events')
 
 import json
 import datetime
@@ -102,7 +102,13 @@ class DateTimeEncoder(json.JSONEncoder):
                 return str(obj.isoformat())
 
 if bool(findings):
-    snsTopic.publish(
-        Message=json.dumps(findings, indent=2, cls=DateTimeEncoder),
-        Subject="Public access found for AWS KMS customer keys"
-        ) 
+    r = events.put_events(
+        Entries=[
+            {
+                "Source":"access-analyzer-kms-function",
+                "Resources":[r["resourceArn"] for r in findings],
+                "DetailType":"Access Analyzer KMS Findings",
+                "Detail":json.dumps({"Findings":findings}, indent=2, cls=DateTimeEncoder), 
+            }
+        ]
+    )

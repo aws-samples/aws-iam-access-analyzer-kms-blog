@@ -32,12 +32,11 @@
         },
         {
             "Action": [
-                "sns:List*",
-                "sns:Publish"
+                "events:PutEvents"
             ],
-            "Resource": "<SNS_TOPIC_ARN>",
+            "Resource": "*",
             "Effect": "Allow",
-            "Sid": "SNSPublishPolicy"
+            "Sid": "EventBridgeAccess"
         }
     ]
 }

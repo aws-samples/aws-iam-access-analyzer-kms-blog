@@ -1,0 +1,8 @@
+{
+    "source": [
+      "access-analyzer-kms-function"
+    ],
+    "detail-type": [
+      "Access Analyzer KMS Findings"
+    ]
+}

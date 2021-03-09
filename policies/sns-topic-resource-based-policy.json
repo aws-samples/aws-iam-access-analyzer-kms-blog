@@ -1,0 +1,9 @@
+{
+    "Sid": "PublishEventsToSNSTopic",
+    "Effect": "Allow",
+    "Principal": {
+      "Service": "events.amazonaws.com"
+    },
+    "Action": "sns:Publish",
+    "Resource": "arn:aws:sns:REGION:ACCOUNT_ID:access-analyzer-kms-keys-findings"
+}

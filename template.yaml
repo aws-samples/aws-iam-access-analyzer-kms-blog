@@ -14,9 +14,6 @@ Resources:
       CodeUri: ./functions/access-analyzer-kms
       Runtime: python3.8
       Timeout: 120
-      Environment:
-        Variables:
-          SNS_TOPIC_ARN: !Ref AccessAnalyzerKMSFindingsTopic
       Events:
         CWKMSPolicyOrGrantChange:
           Type: EventBridgeRule
@@ -62,12 +59,11 @@ Resources:
             - kms:ListKeys
             - kms:DescribeKey
             Resource: '*'
-          - Sid: SNSPublishPolicy
+          - Sid: EventBridgeAccess
             Effect: Allow
             Action:
-            - sns:List*
-            - sns:Publish
-            Resource: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${AccessAnalyzerKMSFindingsTopic.TopicName}        
+            - events:PutEvents
+            Resource: '*'       
       ReservedConcurrentExecutions: 1
       Tags:   
         Project: access-analyzer-kms
@@ -79,3 +75,31 @@ Resources:
       Subscription:
         - Protocol: email
           Endpoint: !Ref NotificationEmail
+
+  AccessAnalyzerKMSFindingsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties: 
+      PolicyDocument:
+        Id: PublishEventsToSNSTopic
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: sns:Publish
+          Resource: !Ref AccessAnalyzerKMSFindingsTopic
+      Topics: 
+        - !Ref AccessAnalyzerKMSFindingsTopic
+
+  AccessAnalyzerKMSFindingsRule:
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: Publishes Access Analyzer KMS findings from the lambda function to the SNS topic
+      EventPattern: 
+        source:
+          - "access-analyzer-kms-function"
+        detail-type:
+          - "Access Analyzer KMS Findings"
+      Targets: 
+        - Arn: !Ref AccessAnalyzerKMSFindingsTopic
+          Id: '1'

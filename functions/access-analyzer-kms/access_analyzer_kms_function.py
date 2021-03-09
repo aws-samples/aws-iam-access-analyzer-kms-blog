@@ -19,12 +19,10 @@ class DateTimeEncoder(json.JSONEncoder):
 MAX_LIST_ANALYZED_RESOURSES_ATTEMPTS = 10
 MAX_LIST_ANALYZED_RESOURCES_RESULTS = 100
 RESOURCE_TYPE_KMS = "AWS::KMS::Key"
-SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN", "")
 analyzer_arn = ""
 kms_client = boto3.client("kms")
 aa_client = boto3.client('accessanalyzer')
-
-snsTopic = boto3.resource('sns').Topic(SNS_TOPIC_ARN)
+events = boto3.client('events')
 accountId = boto3.client('sts').get_caller_identity()["Account"]
 
 # get or create access analyzer
@@ -134,11 +132,18 @@ def lambda_handler(event, context):
 
     findings = scan_kms_customer_keys(get_analyzer_arn(), get_customer_keys_arns())
 
-    # publish findings to a SNS topic
+    # publish findings to the EventBridge default bus
     if bool(findings):
-        snsTopic.publish(
-            Message=json.dumps(findings, indent=2, cls=DateTimeEncoder),
-            Subject="Public access found for AWS KMS customer keys"
-            ) 
+        events.put_events(
+            Entries=[
+                {
+                    "Source":"access-analyzer-kms-function",
+                    "Resources":[r["resourceArn"] for r in findings],
+                    "DetailType":"Access Analyzer KMS Findings",
+                    "Detail":json.dumps({"Findings":findings}, indent=2, cls=DateTimeEncoder), 
+                }
+            ]
+        )
 
     print(f"AccessAnalyzer AWS KMS check completed: {json.dumps(findings, cls=DateTimeEncoder)}")
+
