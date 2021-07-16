@@ -16,7 +16,7 @@ AWS_DEPLOY_REGION ?= us-east-1
 AWS_PUBLISH_REGION ?= us-east-1
 
 # Stack name used when deploying the app for manual testing
-APP_STACK_NAME ?= vfl-visualization
+APP_STACK_NAME ?= kms-access-analyzer
 
 PYTHON := $(shell /usr/bin/which python$(PY_VERSION))
 
